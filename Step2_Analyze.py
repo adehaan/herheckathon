@@ -73,10 +73,21 @@ def rf_model(train_data, test_data):
 
 
 # SVN
-
-
+def svm_model(train_data, test_data):
+    X, label = split_data(train_data)
+    Y, real = split_data(test_data)
+    clf = svm.SVC()
+    clf.fit(X, label)
+    predict = clf.predict(Y)
+    return real, predict
 #kNN
-
+def knn_model(train_data, test_data):
+    X, label = split_data(train_data)
+    Y, real = split_data(test_data)  
+    clf = KNeighborsClassifier(n_neighbors=3, weights = 'distance')
+    clf.fit(X, label)
+    predict = clf.predict(Y)
+    return real, predict
 
 
 # evaluation function
