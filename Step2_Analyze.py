@@ -50,8 +50,8 @@ def plot_histograms(data1, feature, feat_label, info):
     sns.set_palette(palette=palette_her)
     sns.histplot(data1, x=feature, hue=feat_label, alpha = 1)
     sns.despine(offset=10, trim=True)
-    plt.title(info+' Normalization', fontsize = 20)
-    plt.savefig('figure_'+feature+'_'+ info+ '_normalization.png')
+    plt.title(info, fontsize = 20)
+    plt.savefig('figure_'+feature+'_'+ info+ '.png')
 
 
 # MODELS
@@ -265,7 +265,7 @@ def model_notmin(test_data2, train_data2):
 
 # STEP 1 upload
 train_data2, test_data2 = upload()
-plot_histograms(train_data2, 'job_stability', 'default', 'info')
+plot_histograms(train_data2, 'job_stability', 'default', '')
 violin_plot(train_data2, 'sex', 'income', 'default')
 # STEP 2 cleanup
 enc = OneHotEncoder()
