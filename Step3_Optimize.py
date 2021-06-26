@@ -62,6 +62,12 @@ def custom_normalization(data, feature):
     # print('max',max(female_subset_normalized['education']))
     return data_normalized
 
+def split_data(data):
+    data_wlabel = data.loc[:,data.columns != 'default']
+    label = data['default']
+    return data_wlabel, label
+
+
 
 #MODELS
 
@@ -204,3 +210,9 @@ m_acc, m_recall, m_precision, m_f1, m_real, m_predict = model_male(normalized_te
 f_acc, f_recall, f_precision, f_f1, f_real, f_predict = model_female(normalized_test, normalized_train)
 
 # TODO: CREATE JSON FILE FOR THESE NUMBERS
+
+# In Json:
+# m_acc, m_recall, m_precision, m_f1, m_real, m_predict
+# f_acc, f_recall, f_precision, f_f1, f_real, f_predict
+# acc, recall, precision, f1, real, predict
+# women_f, men_f & min_f, notmin_f
