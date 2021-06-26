@@ -2,8 +2,8 @@ import pandas as pd
 import seaborn as sns
 
 def upload():
-    train_data = pd.read_csv('data/train.csv')
-    test_data = pd.read_csv('data/test.csv')
+    train_data = pd.read_csv('train.csv')
+    test_data = pd.read_csv('test.csv')
     return train_data, test_data
 
 def histogram(data,variable):
