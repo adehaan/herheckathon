@@ -171,3 +171,11 @@ m_acc, m_recall, m_precision, m_f1, m_real, m_predict = model_male(test_data2)
 f_acc, f_recall, f_precision, f_f1, f_real, f_predict = model_female(test_data2)
 
 # TODO: CREATE JSON FILE FOR THESE NUMBERS
+
+info = {'General_model': [{'name':'All'}, {'values':[acc, recall, precision, f1, real, predict]}], 
+        'Male_model': [{'name':'male'}, {'values':[m_acc, m_recall, m_precision, m_f1, m_real, m_predict]}],
+        'Female_model': [{'name':'Female'}, {'values':[f_acc, f_recall, f_precision, f_f1, f_real, f_predict]}],
+        'women_f':women_f, 'men_f': men_f, 'min_f': min_f, 'notmin_f':notmin_f}
+
+with open('info.json', 'w') as outfile:
+    json.dump(info, outfile)
