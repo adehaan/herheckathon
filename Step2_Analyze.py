@@ -27,6 +27,12 @@ def normalization(data):
 
 #MODELS
 
+def split_data(data):
+    data_wlabel = data.loc[:,data.columns != 'default']
+    label = data['default']
+    return data_wlabel, label
+
+
 # Naive Bayes
 def nb_model(train_data, test_data):
     gnb = GaussianNB()
@@ -145,14 +151,13 @@ test_data2 = test_data2.drop(['Unnamed: 0.1', 'Unnamed: 0'], axis=1)
 train_data2 = train_data2.drop(['Unnamed: 0'], axis=1)
 
 # STEP 3 Normalization
-normalization(train_data2)
+train_data2 = normalization(train_data2)
+test_data2 = normalization(test_data2)
 
 # STEP 4: Train Model
 # AT THE MOMENT: hardcode which model to use
 # FUTURE: Include Button in Front-End to choose Model or run all and compare
 model = 'randomf'
-train_data = train_data2
-test_data = test_data2
 
 # STEP 5 Run and Evaluate Model
 acc, recall, precision, f1, real, predict = run_model(model, train_data2, test_data2)
