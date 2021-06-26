@@ -7,12 +7,14 @@ import json
 
 import collections
 from sklearn.metrics import recall_score, f1_score, precision_score, accuracy_score
-from sklearn import preprocessing
+from sklearn import preprocessing, svm
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
 
 
 def upload():
@@ -28,6 +30,28 @@ def normalization(data):
             feat = data.columns[i]
             data_normalized[feat] = data_normalized[feat] / data_normalized[feat].abs().max()
     return data_normalized
+
+def violin_plot(data, x, y, hue):
+    palette_her = ["#FFC2C0", "#141B38", "#DE7D7E", "#626380", "#D0A0A5"]
+    sns.set_palette(palette=palette_her)
+    sns.set_style("darkgrid")
+    sns.set_style("ticks", {"xtick.major.size": 8, "ytick.major.size": 8})
+    sns.set(font_scale=1)
+    g = sns.catplot(x="sex", y="income", hue = 'default', split = True, kind="violin", inner=None, data=data, palette = palette_her, aspect = 0.8)
+    g.set_xlabels(x, fontsize = 15)
+    g.set_ylabels(y, fontsize = 15)
+    sns.despine(offset=10, trim=True)
+    g.savefig('violin_plot.png')
+#violin_plot(aux, 'sex', 'income', 'default')
+
+def plot_histograms(data1, feature, feat_label, info):
+    palette_her = ["#FFC2C0", "#141B38", "#DE7D7E", "#626380", "#D0A0A5"]
+    sns.set_style("darkgrid")
+    sns.set_palette(palette=palette_her)
+    sns.histplot(data1, x=feature, hue=feat_label, alpha = 1)
+    sns.despine(offset=10, trim=True)
+    plt.title(info+' Normalization', fontsize = 20)
+    plt.savefig('figure_'+feature+'_'+ info+ '_normalization.png')
 
 
 # MODELS
@@ -156,6 +180,7 @@ def check_diff_sex(test_data2):
     tn, fp, fn, tp = confusion_matrix(real, predict).ravel()
     print(fp / len(predict))
     tn1, fp1, fn1, tp1 = confusion_matrix(r_men, p_men).ravel()
+    men_f = fp1 / len(p_men)
     print(fp1 / len(p_men))
     tn2, fp2, fn2, tp2 = confusion_matrix(r_women, p_women).ravel()
     women_f = fp2 / len(p_women)
@@ -240,7 +265,8 @@ def model_notmin(test_data2, train_data2):
 
 # STEP 1 upload
 train_data2, test_data2 = upload()
-
+plot_histograms(train_data2, 'job_stability', 'default', 'info')
+violin_plot(train_data2, 'sex', 'income', 'default')
 # STEP 2 cleanup
 enc = OneHotEncoder()
 enc_df = pd.DataFrame(enc.fit_transform(train_data2[['ZIP']]).toarray())  # merge with main df bridge_df on key values
