@@ -12,25 +12,28 @@ from sklearn import preprocessing
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import OneHotEncoder
+
 
 def upload():
     train_data = pd.read_csv('data/train.csv')
     test_data = pd.read_csv('data/test.csv')
     return train_data, test_data
 
+
 def normalization(data):
     data_normalized = data.copy()
     for i in range(len(data.columns)):
-        if data[data.columns[i]].dtype !='int64' and data[data.columns[i]].dtype !='bool':
+        if data[data.columns[i]].dtype != 'int64' and data[data.columns[i]].dtype != 'bool':
             feat = data.columns[i]
-            data_normalized[feat] = data_normalized[feat]/data_normalized[feat].abs().max()
+            data_normalized[feat] = data_normalized[feat] / data_normalized[feat].abs().max()
     return data_normalized
 
 
-#MODELS
+# MODELS
 
 def split_data(data):
-    data_wlabel = data.loc[:,data.columns != 'default']
+    data_wlabel = data.loc[:, data.columns != 'default']
     label = data['default']
     return data_wlabel, label
 
@@ -45,6 +48,7 @@ def nb_model(train_data, test_data):
     wrong = (real != predict).sum()
     return real, predict
 
+
 # Logistic Regression
 def logistic_reg_model(train_data, test_data):
     logmodel = LogisticRegression()
@@ -55,6 +59,7 @@ def logistic_reg_model(train_data, test_data):
     wrong = (real != predict).sum()
     return real, predict
 
+
 # Random Forest
 def rf_model(train_data, test_data):
     X, label = split_data(train_data)
@@ -63,6 +68,7 @@ def rf_model(train_data, test_data):
     clf.fit(X, label)
     predict = clf.predict(Y)
     return real, predict
+
 
 # # Nearest Centroid
 # def nc_model(train_data, test_data):
@@ -80,11 +86,25 @@ def svm_model(train_data, test_data):
     clf.fit(X, label)
     predict = clf.predict(Y)
     return real, predict
-#kNN
+
+
+# kNN
 def knn_model(train_data, test_data):
     X, label = split_data(train_data)
-    Y, real = split_data(test_data)  
-    clf = KNeighborsClassifier(n_neighbors=3, weights = 'distance')
+    Y, real = split_data(test_data)
+    clf = KNeighborsClassifier(n_neighbors=3, weights='distance')
+    clf.fit(X, label)
+    predict = clf.predict(Y)
+    return real, predict
+
+
+# decision tree
+def dt_model(train_data, test_data):
+    print(train_data['default'].value_counts())
+    X, label = split_data(train_data)
+    print(collections.Counter(label))
+    Y, real = split_data(test_data)
+    clf = DecisionTreeClassifier()
     clf.fit(X, label)
     predict = clf.predict(Y)
     return real, predict
@@ -98,18 +118,23 @@ def evaluation_model(real, predict):
     f1 = f1_score(real, predict, average='weighted')
     return acc, recall, precision, f1
 
-#-----------------------------------------------------
+
+# -----------------------------------------------------
 
 def run_model(model, train_data, test_data):
     # runs models & create predictions
     if model == 'nb_model':
-        real, predict = rf_model(train_data, test_data)
+        real, predict = nb_model(train_data, test_data)
     if model == 'logistic':
         real, predict = logistic_reg_model(train_data, test_data)
     if model == 'randomf':
         real, predict = rf_model(train_data, test_data)
     if model == 'svn':
-        real, predict = rf_model(train_data, test_data)
+        real, predict = svm_model(train_data, test_data)
+    if model == 'knn':
+        real, predict = knn_model(train_data, test_data)
+    if model == 'dt':
+        real, predict = dt_model(train_data, test_data)
 
     # evaluates model
     acc, recall, precision, f1 = evaluation_model(real, predict)
@@ -119,57 +144,132 @@ def run_model(model, train_data, test_data):
 
 # Calculating Differences in Prediction
 def check_diff_sex(test_data2):
-    test_data2['predict']=pd.Series(predict)
-    women_f = test_data2.loc[(test_data2["default"] != test_data2["predict"]) & test_data2["sex"]==1]
-    men_f = test_data2.loc[(test_data2["default"] != test_data2["predict"]) & test_data2["sex"]==0]
+    # new method
+    test_data2['real'] = real
+    test_data2['predict'] = predict
+    men = test_data2[test_data2['sex'] == 0]
+    women = test_data2[test_data2['sex'] == 1]
+    r_men = men['real']
+    r_women = women['real']
+    p_men = men['predict']
+    p_women = women['predict']
+    tn, fp, fn, tp = confusion_matrix(real, predict).ravel()
+    print(fp / len(predict))
+    tn1, fp1, fn1, tp1 = confusion_matrix(r_men, p_men).ravel()
+    print(fp1 / len(p_men))
+    tn2, fp2, fn2, tp2 = confusion_matrix(r_women, p_women).ravel()
+    women_f = fp2 / len(p_women)
+    print(fp2 / len(p_women))
+
     test_data2 = test_data2.drop(['predict'], axis=1)
-    return test_data2, women_f.shape[0], men_f.shape[0]
+    test_data2 = test_data2.drop(['real'], axis=1)
+
+    # old method
+    # test_data2['predict']=pd.Series(predict)
+    # women_f = test_data2.loc[(test_data2["default"] != test_data2["predict"]) & test_data2["sex"]==1]
+    # men_f = test_data2.loc[(test_data2["default"] != test_data2["predict"]) & test_data2["sex"]==0]
+    # test_data2 = test_data2.drop(['predict'], axis=1)
+    return test_data2, women_f, men_f
+
 
 def check_diff_minority(test_data2):
-    test_data2['predict']=pd.Series(predict)
-    min_f = test_data2.loc[(test_data2["default"] != test_data2["predict"]) & test_data2["minority"]==1]
-    notmin_f = test_data2.loc[(test_data2["default"] != test_data2["predict"]) & test_data2["minority"]==0]
-    test_data2 =test_data2.drop(['predict'], axis=1)
-    return test_data2, min_f.shape[0], notmin_f.shape[0]
+    # new method
+    test_data2['real'] = real
+    test_data2['predict'] = predict
+    minority = test_data2[test_data2['minority'] == 1]
+    notminority = test_data2[test_data2['minority'] == 0]
+    r_min = minority['real']
+    r_notmin = notminority['real']
+    p_min = minority['predict']
+    p_notmin = notminority['predict']
+
+    tn3, fp3, fn3, tp3 = confusion_matrix(r_min, p_min).ravel()
+    min_f = fp3 / len(p_min)
+
+    tn4, fp4, fn4, tp4 = confusion_matrix(r_notmin, p_notmin).ravel()
+    notmin_f = fp4 / len(p_notmin)
+
+    test_data2 = test_data2.drop(['predict'], axis=1)
+    test_data2 = test_data2.drop(['real'], axis=1)
+    # old method
+    # test_data2['predict']=pd.Series(predict)
+    # min_f = test_data2.loc[(test_data2["default"] != test_data2["predict"]) & test_data2["minority"]==1]
+    # notmin_f = test_data2.loc[(test_data2["default"] != test_data2["predict"]) & test_data2["minority"]==0]
+    # test_data2 =test_data2.drop(['predict'], axis=1)
+    return test_data2, min_f, notmin_f
 
 
 # Rerun Models on Female subset or Male subset
 # 1 Female
 def model_female(test_data2, train_data2):
-    train_data_female = train_data2.loc[train_data2["sex"]==1]
-    test_data_female = test_data2.loc[test_data2["sex"]==1]
-    #test_data2 = test_data2.drop(['predict'], axis=1, inplace=True)
-    f_acc, f_recall, f_precision, f_f1, f_real, f_predict = run_model(model,train_data_female, test_data_female)
+    train_data_female = train_data2.loc[train_data2["sex"] == 1]
+    test_data_female = test_data2.loc[test_data2["sex"] == 1]
+    # test_data2 = test_data2.drop(['predict'], axis=1, inplace=True)
+    f_acc, f_recall, f_precision, f_f1, f_real, f_predict = run_model(model, train_data_female, test_data_female)
     return f_acc, f_recall, f_precision, f_f1, f_real, f_predict
+
 
 # 2 Male
 def model_male(test_data2, train_data2):
-    train_data_male = train_data2.loc[train_data2["sex"]==0]
-    test_data_male = test_data2.loc[test_data2["sex"]==0]
-    #test_data2 = test_data2.drop(['predict'], axis=1)
-    m_acc, m_recall, m_precision, m_f1, m_real, m_predict = run_model(model,train_data_male, test_data_male)
+    train_data_male = train_data2.loc[train_data2["sex"] == 0]
+    test_data_male = test_data2.loc[test_data2["sex"] == 0]
+    # test_data2 = test_data2.drop(['predict'], axis=1)
+    m_acc, m_recall, m_precision, m_f1, m_real, m_predict = run_model(model, train_data_male, test_data_male)
     return m_acc, m_recall, m_precision, m_f1, m_real, m_predict
 
 
+# 3 Minority
+def model_min(test_data2, train_data2):
+    train_data_min = train_data2.loc[train_data2["minority"] == 1]
+    test_data_min = test_data2.loc[test_data2["minority"] == 1]
+    f_acc, f_recall, f_precision, f_f1, f_real, f_predict = run_model(model, train_data_min, test_data_min)
+    return f_acc, f_recall, f_precision, f_f1, f_real, f_predict
 
-#-------------------------------------------------------
 
-#PREPROCESSING
+# 4 Not Minority
+def model_notmin(test_data2, train_data2):
+    train_data_notmin = train_data2.loc[train_data2["minority"] == 0]
+    test_data_notmin = test_data2.loc[test_data2["minority"] == 0]
+    m_acc, m_recall, m_precision, m_f1, m_real, m_predict = run_model(model, train_data_notmin, test_data_notmin)
+    return m_acc, m_recall, m_precision, m_f1, m_real, m_predict
+
+
+# -------------------------------------------------------
+
+# PREPROCESSING
 
 # STEP 1 upload
-train_data, test_data = upload()
+train_data2, test_data2 = upload()
 
 # STEP 2 cleanup
-cleanup_nums = {"ZIP":     {"MT01RA": 0, "MT15PA": 1, "MT04PA":2, "MT12RA":3},
-                "occupation": {"MZ10CD": 0, "MZ01CD": 1, "MZ11CD": 2}}
-train_data2 = train_data.replace(cleanup_nums)
-test_data2 = test_data.replace(cleanup_nums)
+enc = OneHotEncoder()
+enc_df = pd.DataFrame(enc.fit_transform(train_data2[['ZIP']]).toarray())  # merge with main df bridge_df on key values
+enc_df = enc_df.rename(columns={0: 'Zip1', 1: 'Zip2', 2: 'Zip3', 3: 'Zip4'})
+train_data2 = train_data2.join(enc_df)
+
+enc_df2 = pd.DataFrame(
+    enc.fit_transform(train_data2[['occupation']]).toarray())  # merge with main df bridge_df on key values
+enc_df2 = enc_df2.rename(columns={0: 'Occupation1', 1: 'Occupation2', 2: 'Occupation3'})
+train_data2 = train_data2.join(enc_df2)
+
+enc_df3 = pd.DataFrame(enc.fit_transform(test_data2[['ZIP']]).toarray())  # merge with main df bridge_df on key values
+enc_df3 = enc_df3.rename(columns={0: 'Zip1', 1: 'Zip2', 2: 'Zip3', 3: 'Zip4'})
+test_data2 = test_data2.join(enc_df3)
+
+enc_df4 = pd.DataFrame(
+    enc.fit_transform(test_data2[['occupation']]).toarray())  # merge with main df bridge_df on key values
+enc_df4 = enc_df4.rename(columns={0: 'Occupation1', 1: 'Occupation2', 2: 'Occupation3'})
+test_data2 = test_data2.join(enc_df4)
+
+train_data2 = train_data2.drop(['occupation', 'ZIP'], axis=1)
+test_data2 = test_data2.drop(['occupation', 'ZIP'], axis=1)
+
 test_data2 = test_data2.drop(['Unnamed: 0.1', 'Unnamed: 0'], axis=1)
 train_data2 = train_data2.drop(['Unnamed: 0'], axis=1)
 
 # STEP 3 Normalization
-train_data2 = normalization(train_data2)
-test_data2 = normalization(test_data2)
+# train_data2 = normalization(train_data2)
+# test_data2 = normalization(test_data2)
 
 # STEP 4: Train Model
 # AT THE MOMENT: hardcode which model to use
@@ -186,13 +286,16 @@ test_data2, min_f, notmin_f = check_diff_minority(test_data2)
 # STEP 7 Rerun Models on female and male only
 m_acc, m_recall, m_precision, m_f1, m_real, m_predict = model_male(test_data2, train_data2)
 f_acc, f_recall, f_precision, f_f1, f_real, f_predict = model_female(test_data2, train_data2)
+min_acc, min_recall, min_precision, min_f1, min_real, min_predict = model_min(test_data2, train_data2)
+notmin_acc, notmin_recall, notmin_precision, notmin_f1, notmin_real, notmin_predict = model_notmin(test_data2,
+                                                                                                   train_data2)
 
-# TODO: CREATE JSON FILE FOR THESE NUMBERS
-
-info = {'General_model': {'name': 'All', 'acc':acc, 'recall': recall, 'precision': precision, 'f1': f1}, 
-        'Male_model': {'name':'male', 'm_acc': m_acc, 'm_recall': m_recall, 'm_precision': m_precision, 'm_f1':m_f1},
-        'Female_model': {'name':'Female', 'f_acc': f_acc, 'f_recall': f_recall, 'f_precision': f_precision,'f_f1':f_f1},
-        'women_f': women_f, 'men_f': men_f, 'min_f': min_f, 'notmin_f':notmin_f}
+# CREATES JSON FILE FOR FRONT-END
+info = {'General_model': {'name': 'All', 'acc': acc, 'recall': recall, 'precision': precision, 'f1': f1},
+        'Male_model': {'name': 'male', 'm_acc': m_acc, 'm_recall': m_recall, 'm_precision': m_precision, 'm_f1': m_f1},
+        'Female_model': {'name': 'Female', 'f_acc': f_acc, 'f_recall': f_recall, 'f_precision': f_precision,
+                         'f_f1': f_f1},
+        'women_f': women_f, 'men_f': men_f, 'min_f': min_f, 'notmin_f': notmin_f}
 
 with open('info.json', 'w') as outfile:
     json.dump(info, outfile)
