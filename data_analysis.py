@@ -345,27 +345,43 @@ correlation(train_data2, feature)
         
 # Step 3.2 Normalization when correlation above certain threshold
 
-def normalization(data):
-    # subset data - only normalize high correlation
+def custom_normalization(data, feature):
     correlated_features = correlation(data, feature)
     # subset data - only normalize high correlation
     female_subset = data.loc[data[feature]==1]
     male_subset = data.loc[data[feature]==0]
     female_subset_normalized = female_subset.copy()
     male_subset_normalized = male_subset.copy()
-    for feat in correlated_features:
-        plot_histograms(data, feat, feature, 'Before')
-        #female_subset_normalized[feat]= preprocessing.normalize(female_subset[feat], norm='l2')
-        female_subset_normalized[feat] = female_subset_normalized[feat]/female_subset_normalized[feat].abs().max()
-        
-        male_subset_normalized[feat] = male_subset_normalized[feat]/male_subset_normalized[feat].abs().max()
-        print(feat)
-        data_normalized = female_subset_normalized.append(male_subset_normalized)
-        plot_histograms(data_normalized, feat, feature, 'After')
-    print(max(female_subset_normalized['education']))
-    histogramm(female_subset_normalized, 'education')
-normalization(train_data2, feature)
+    for i in range(len(data.columns)):
+        if data.columns[i] in correlated_features and data[data.columns[i]].dtype !='int64' and data[data.columns[i]].dtype !='bool':
+            feat = data.columns[i]
+            plot_histograms(data, feat, feature, 'Before')
+            #female_subset_normalized[feat]= preprocessing.normalize(female_subset[feat], norm='l2')
+            female_subset_normalized[feat] = female_subset_normalized[feat]/female_subset_normalized[feat].abs().max()
+            male_subset_normalized[feat] = male_subset_normalized[feat]/male_subset_normalized[feat].abs().max()
+            print('custom_normalization', feat)
+            data_normalized = female_subset_normalized.append(male_subset_normalized)
+            plot_histograms(data_normalized, feat, feature, 'After')
+    
+    for i in range(len(data.columns)):
+        if data.columns[i] not in correlated_features and data[data.columns[i]].dtype !='int64' and data[data.columns[i]].dtype !='bool':
+            feat = data.columns[i]
+            data_normalized[feat] = data_normalized[feat]/data_normalized[feat].abs().max()
+            print('normalize', feat)
+    #print('max',max(female_subset_normalized['education']))
+    return data_normalized
+custom_normalization(train_data2, feature)
 
+def normalization(data):
+    data_normalized = data.copy()
+    for i in range(len(data.columns)):
+        #print(data[data.columns[i]].dtype, '-->', data[data.columns[i]] )
+        if data[data.columns[i]].dtype !='int64' and data[data.columns[i]].dtype !='bool':
+            feat = data.columns[i]
+            data_normalized[feat] = data_normalized[feat]/data_normalized[feat].abs().max()
+            #print('normalize', feat)
+
+normalization(train_data2)
 
 
     
