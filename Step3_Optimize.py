@@ -13,6 +13,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.tree import DecisionTreeClassifier
 
 
 def upload():
@@ -27,10 +28,30 @@ def split_data(data):
     return data_wlabel, label
 
 
+def violin_plot(data, x, y, hue):
+    palette_her = ["#FFC2C0", "#141B38", "#DE7D7E", "#626380", "#D0A0A5"]
+    sns.set_palette(palette=palette_her)
+    sns.set_style("darkgrid")
+    sns.set_style("ticks", {"xtick.major.size": 8, "ytick.major.size": 8})
+    sns.set(font_scale=1)
+    g = sns.catplot(x="sex", y="income", hue = 'default', split = True, kind="violin", inner=None, data=data, palette = palette_her, aspect = 0.8)
+    g.set_xlabels(x, fontsize = 15)
+    g.set_ylabels(y, fontsize = 15)
+    sns.despine(offset=10, trim=True)
+    g.savefig('violin_plot.png')
+#violin_plot(aux, 'sex', 'income', 'default')
+
+
 def plot_histograms(data1, feature, feat_label, info):
-    sns.displot(data1, x=feature, hue=feat_label)
-    plt.title(info + ' normalization')
-    plt.show()
+    palette_her = ["#FFC2C0", "#141B38", "#DE7D7E", "#626380", "#D0A0A5"]
+    sns.set_style("darkgrid")
+    sns.set_palette(palette=palette_her)
+    sns.histplot(data1, x=feature, hue=feat_label, alpha = 1)
+    sns.despine(offset=10, trim=True)
+
+    plt.title(info, fontsize = 20)
+    plt.savefig('figure_'+feature+'_'+ info+ '_normalization.png')
+    #plt.show()
 
 
 # Correlation Calculation
@@ -73,14 +94,14 @@ def custom_normalization(data_train, data_test, feature):
                 data_train[
                     data_train.columns[i]].dtype != 'bool':
             feat = data_train.columns[i]
-            plot_histograms(data_train, feat, feature, 'Before')
+            plot_histograms(data_train, feat, feature, 'Before Normalization')
             female_subset_train_normalized[feat] = female_subset_train_normalized[feat] / \
                                                    female_subset_train_normalized[feat].abs().max()
             male_subset_train_normalized[feat] = male_subset_train_normalized[feat] / male_subset_train_normalized[
                 feat].abs().max()
             print('custom_normalization', feat)
             data_train_normalized = female_subset_train_normalized.append(male_subset_train_normalized)
-            plot_histograms(data_train_normalized, feat, feature, 'After')
+            plot_histograms(data_train_normalized, feat, feature, 'After Normalization')
 
             female_subset_test_normalized[feat] = female_subset_test_normalized[feat] / female_subset_test_normalized[
                 feat].abs().max()
@@ -219,6 +240,7 @@ def check_diff_sex(test_data2):
     tn, fp, fn, tp = confusion_matrix(real, predict).ravel()
     print(fp / len(predict))
     tn1, fp1, fn1, tp1 = confusion_matrix(r_men, p_men).ravel()
+    men_f = fp1 / len(p_men)
     print(fp1 / len(p_men))
     tn2, fp2, fn2, tp2 = confusion_matrix(r_women, p_women).ravel()
     women_f = fp2 / len(p_women)
